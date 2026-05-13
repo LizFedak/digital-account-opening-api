@@ -1,0 +1,865 @@
+openapi: 3.0.3
+info:
+  title: Digital Account Opening API
+  version: 1.0.0
+  description: Northstar Bank's Digital Account Opening API powers the intake, review, and lifecycle management of new retail deposit account applications across web, mobile, branch, and partner channels. Product teams, branch systems, digital banking apps, and approved fintech partners use it to submit applicant details, track decisions, and coordinate onboarding status through a consistent enterprise contract. The API exists in Northstar's portfolio to standardize account origination workflows, make end-to-end testing repeatable in Postman Enterprise, and provide a governed integration surface that can be discovered internally or shared safely with partners.
+  contact:
+    name: Northstar Bank API Platform Team
+    email: api-platform@northstarbank.example
+    url: https://developer.northstarbank.example
+servers:
+  - url: http://localhost:3000
+    description: Local demo server
+  - url: https://digital-account-opening-api.northstarbank.internal
+    description: Internal Kubernetes ingress
+security:
+  - ApiKeyAuth: []
+tags:
+  - name: Health
+    description: Service health and operational readiness
+  - name: Account Applications
+    description: Digital retail account opening application lifecycle
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Check service health
+      description: Returns the current health status for the Digital Account Opening API.
+      operationId: get-health
+      parameters:
+        - $ref: "#/components/parameters/CorrelationIdHeader"
+      responses:
+        "200":
+          description: Service is healthy.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              examples:
+                healthy:
+                  summary: Healthy service response
+                  value:
+                    status: healthy
+                    service: Digital Account Opening API
+                    timestamp: "2026-05-12T16:20:00.000Z"
+                    correlationId: corr_demo_8f2a9f66-55be-4f01-94b5-1093ed6249a9
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /account-applications:
+    post:
+      tags:
+        - Account Applications
+      summary: Create a digital account application
+      description: Creates a new retail deposit account application for an applicant.
+      operationId: create-account-application
+      parameters:
+        - $ref: "#/components/parameters/CorrelationIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAccountApplicationRequest"
+            examples:
+              checkingApplication:
+                summary: New checking account application
+                value:
+                  productCode: NSB_EVERYDAY_CHECKING
+                  accountType: checking
+                  primaryApplicant:
+                    firstName: Jordan
+                    lastName: Lee
+                    email: jordan.lee@example.com
+                    phone: "+1-303-555-0142"
+                    dateOfBirth: "1990-04-17"
+                    taxResidency: US
+                    address:
+                      line1: 100 Market Street
+                      line2: Suite 220
+                      city: Denver
+                      state: CO
+                      postalCode: "80202"
+                      country: US
+                  identityVerification:
+                    method: document-upload
+                    documentType: drivers-license
+                    documentLastFour: "1042"
+                  funding:
+                    initialDepositAmount: 250
+                    fundingMethod: ach
+                    externalAccountLastFour: "7788"
+      responses:
+        "201":
+          description: Account application created successfully.
+          headers:
+            Location:
+              description: Relative URL for the created account application.
+              schema:
+                type: string
+                example: /account-applications/app_demo_20260512_ab12cd
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountApplicationEnvelope"
+              examples:
+                created:
+                  summary: Created application response
+                  value:
+                    data:
+                      applicationId: app_demo_20260512_ab12cd
+                      status: submitted
+                      productCode: NSB_EVERYDAY_CHECKING
+                      accountType: checking
+                      primaryApplicant:
+                        firstName: Jordan
+                        lastName: Lee
+                        email: jordan.lee@example.com
+                        phone: "+1-303-555-0142"
+                        dateOfBirth: "1990-04-17"
+                        taxResidency: US
+                        address:
+                          line1: 100 Market Street
+                          line2: Suite 220
+                          city: Denver
+                          state: CO
+                          postalCode: "80202"
+                          country: US
+                      identityVerification:
+                        method: document-upload
+                        documentType: drivers-license
+                        documentLastFour: "1042"
+                        verificationStatus: pending
+                      funding:
+                        initialDepositAmount: 250
+                        fundingMethod: ach
+                        externalAccountLastFour: "7788"
+                      riskScore: 18
+                      submittedAt: "2026-05-12T16:20:00.000Z"
+                      updatedAt: "2026-05-12T16:20:00.000Z"
+                    meta:
+                      correlationId: corr_demo_b5301bf2-c5c7-4de2-a78b-04b6f7f36c22
+                      timestamp: "2026-05-12T16:20:00.000Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    get:
+      tags:
+        - Account Applications
+      summary: List digital account applications
+      description: Returns account applications with optional filtering by status and product code.
+      operationId: list-account-applications
+      parameters:
+        - $ref: "#/components/parameters/CorrelationIdHeader"
+        - name: status
+          in: query
+          required: false
+          description: Filter applications by lifecycle status.
+          schema:
+            $ref: "#/components/schemas/ApplicationStatus"
+          example: submitted
+        - name: productCode
+          in: query
+          required: false
+          description: Filter applications by product code.
+          schema:
+            type: string
+            example: NSB_EVERYDAY_CHECKING
+          example: NSB_EVERYDAY_CHECKING
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of applications to return.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+            example: 25
+          example: 25
+        - name: offset
+          in: query
+          required: false
+          description: Number of applications to skip before returning results.
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+            example: 0
+          example: 0
+      responses:
+        "200":
+          description: Applications returned successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountApplicationListEnvelope"
+              examples:
+                filteredList:
+                  summary: List applications response
+                  value:
+                    data:
+                      - applicationId: app_demo_1001
+                        status: submitted
+                        productCode: NSB_EVERYDAY_CHECKING
+                        accountType: checking
+                        primaryApplicant:
+                          firstName: Alex
+                          lastName: Morgan
+                          email: alex.morgan@example.com
+                          phone: "+1-303-555-0101"
+                          dateOfBirth: "1988-06-12"
+                          taxResidency: US
+                          address:
+                            line1: 1800 Blake Street
+                            line2: Apt 4B
+                            city: Denver
+                            state: CO
+                            postalCode: "80202"
+                            country: US
+                        identityVerification:
+                          method: document-upload
+                          documentType: drivers-license
+                          documentLastFour: "2144"
+                          verificationStatus: pending
+                        funding:
+                          initialDepositAmount: 500
+                          fundingMethod: ach
+                          externalAccountLastFour: "4301"
+                        riskScore: 12
+                        submittedAt: "2026-05-01T14:12:00.000Z"
+                        updatedAt: "2026-05-01T14:12:00.000Z"
+                    meta:
+                      correlationId: corr_demo_e755d6a3-1807-4562-a1a4-8d2a6db974b1
+                      timestamp: "2026-05-12T16:21:00.000Z"
+                      count: 1
+                      limit: 25
+                      offset: 0
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /account-applications/{applicationId}:
+    get:
+      tags:
+        - Account Applications
+      summary: Retrieve a digital account application
+      description: Returns a single digital account application by ID.
+      operationId: get-account-application
+      parameters:
+        - $ref: "#/components/parameters/CorrelationIdHeader"
+        - $ref: "#/components/parameters/ApplicationIdPath"
+      responses:
+        "200":
+          description: Application returned successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountApplicationEnvelope"
+              examples:
+                found:
+                  summary: Retrieve application response
+                  value:
+                    data:
+                      applicationId: app_demo_1001
+                      status: submitted
+                      productCode: NSB_EVERYDAY_CHECKING
+                      accountType: checking
+                      primaryApplicant:
+                        firstName: Alex
+                        lastName: Morgan
+                        email: alex.morgan@example.com
+                        phone: "+1-303-555-0101"
+                        dateOfBirth: "1988-06-12"
+                        taxResidency: US
+                        address:
+                          line1: 1800 Blake Street
+                          line2: Apt 4B
+                          city: Denver
+                          state: CO
+                          postalCode: "80202"
+                          country: US
+                      identityVerification:
+                        method: document-upload
+                        documentType: drivers-license
+                        documentLastFour: "2144"
+                        verificationStatus: pending
+                      funding:
+                        initialDepositAmount: 500
+                        fundingMethod: ach
+                        externalAccountLastFour: "4301"
+                      riskScore: 12
+                      submittedAt: "2026-05-01T14:12:00.000Z"
+                      updatedAt: "2026-05-01T14:12:00.000Z"
+                    meta:
+                      correlationId: corr_demo_25f0e556-e082-4f3a-ad04-82a6b6470031
+                      timestamp: "2026-05-12T16:22:00.000Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - Account Applications
+      summary: Cancel and remove a digital account application
+      description: Cancels an application that is still in the onboarding workflow and removes it from the in-memory demo store.
+      operationId: delete-account-application
+      parameters:
+        - $ref: "#/components/parameters/CorrelationIdHeader"
+        - $ref: "#/components/parameters/ApplicationIdPath"
+      responses:
+        "200":
+          description: Application cancelled and removed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteAccountApplicationEnvelope"
+              examples:
+                deleted:
+                  summary: Cancelled application response
+                  value:
+                    data:
+                      applicationId: app_demo_1003
+                      status: cancelled
+                      deleted: true
+                    meta:
+                      correlationId: corr_demo_221234c7-a1f0-45e7-a210-d52a3144361f
+                      timestamp: "2026-05-12T16:23:00.000Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /account-applications/{applicationId}/status:
+    patch:
+      tags:
+        - Account Applications
+      summary: Update digital account application status
+      description: Advances an application through the demo onboarding lifecycle.
+      operationId: update-account-application-status
+      parameters:
+        - $ref: "#/components/parameters/CorrelationIdHeader"
+        - $ref: "#/components/parameters/ApplicationIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateApplicationStatusRequest"
+            examples:
+              moveToReview:
+                summary: Move application into review
+                value:
+                  status: in-review
+                  reason: Applicant identity documents received.
+      responses:
+        "200":
+          description: Application status updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountApplicationEnvelope"
+              examples:
+                updated:
+                  summary: Status updated response
+                  value:
+                    data:
+                      applicationId: app_demo_1001
+                      status: in-review
+                      productCode: NSB_EVERYDAY_CHECKING
+                      accountType: checking
+                      primaryApplicant:
+                        firstName: Alex
+                        lastName: Morgan
+                        email: alex.morgan@example.com
+                        phone: "+1-303-555-0101"
+                        dateOfBirth: "1988-06-12"
+                        taxResidency: US
+                        address:
+                          line1: 1800 Blake Street
+                          line2: Apt 4B
+                          city: Denver
+                          state: CO
+                          postalCode: "80202"
+                          country: US
+                      identityVerification:
+                        method: document-upload
+                        documentType: drivers-license
+                        documentLastFour: "2144"
+                        verificationStatus: verified
+                      funding:
+                        initialDepositAmount: 500
+                        fundingMethod: ach
+                        externalAccountLastFour: "4301"
+                      riskScore: 12
+                      submittedAt: "2026-05-01T14:12:00.000Z"
+                      updatedAt: "2026-05-12T16:24:00.000Z"
+                    meta:
+                      correlationId: corr_demo_3f66e518-e985-4b2f-aec8-85cfd0685716
+                      timestamp: "2026-05-12T16:24:00.000Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: Demo API key issued by the Northstar Bank API Platform Team.
+  parameters:
+    CorrelationIdHeader:
+      name: x-correlation-id
+      in: header
+      required: false
+      description: Optional caller-provided correlation ID used for request tracing.
+      schema:
+        type: string
+        example: corr_demo_client_001
+      example: corr_demo_client_001
+    ApplicationIdPath:
+      name: applicationId
+      in: path
+      required: true
+      description: Unique digital account application ID.
+      schema:
+        type: string
+        example: app_demo_1001
+      example: app_demo_1001
+  responses:
+    BadRequest:
+      description: The request was invalid or missing required fields.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            badRequest:
+              summary: Invalid request
+              value:
+                error:
+                  code: VALIDATION_ERROR
+                  message: primaryApplicant.email is required.
+                  correlationId: corr_demo_531a6e6b-0ea6-438a-bb83-77fb59308fc1
+    Unauthorized:
+      description: The API key is missing or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            unauthorized:
+              summary: Invalid API key
+              value:
+                error:
+                  code: UNAUTHORIZED
+                  message: A valid x-api-key header is required.
+                  correlationId: corr_demo_6c46f606-8855-4c09-89f2-13cdd62ec828
+    NotFound:
+      description: The requested application was not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            notFound:
+              summary: Unknown application ID
+              value:
+                error:
+                  code: APPLICATION_NOT_FOUND
+                  message: Account application app_demo_unknown was not found.
+                  correlationId: corr_demo_36a66f0d-d335-4f63-9ff9-e70df45d05ef
+    Conflict:
+      description: The request conflicts with the current application state.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            conflict:
+              summary: Invalid state transition
+              value:
+                error:
+                  code: INVALID_STATUS_TRANSITION
+                  message: Cannot transition application from approved to in-review.
+                  correlationId: corr_demo_7880b167-252e-47cf-8e26-3bd594f9032b
+  schemas:
+    ApplicationStatus:
+      type: string
+      description: Lifecycle status for a digital account application.
+      enum:
+        - submitted
+        - in-review
+        - approved
+        - rejected
+        - cancelled
+      example: submitted
+    AccountType:
+      type: string
+      description: Retail account type requested by the applicant.
+      enum:
+        - checking
+        - savings
+        - money-market
+      example: checking
+    Address:
+      type: object
+      required:
+        - line1
+        - city
+        - state
+        - postalCode
+        - country
+      properties:
+        line1:
+          type: string
+          example: 1800 Blake Street
+        line2:
+          type: string
+          example: Apt 4B
+        city:
+          type: string
+          example: Denver
+        state:
+          type: string
+          example: CO
+        postalCode:
+          type: string
+          example: "80202"
+        country:
+          type: string
+          example: US
+    PrimaryApplicant:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - phone
+        - dateOfBirth
+        - taxResidency
+        - address
+      properties:
+        firstName:
+          type: string
+          example: Alex
+        lastName:
+          type: string
+          example: Morgan
+        email:
+          type: string
+          format: email
+          example: alex.morgan@example.com
+        phone:
+          type: string
+          example: "+1-303-555-0101"
+        dateOfBirth:
+          type: string
+          format: date
+          example: "1988-06-12"
+        taxResidency:
+          type: string
+          example: US
+        address:
+          $ref: "#/components/schemas/Address"
+    IdentityVerificationRequest:
+      type: object
+      required:
+        - method
+        - documentType
+        - documentLastFour
+      properties:
+        method:
+          type: string
+          enum:
+            - document-upload
+            - partner-kyc
+            - branch-verification
+          example: document-upload
+        documentType:
+          type: string
+          enum:
+            - drivers-license
+            - passport
+            - state-id
+          example: drivers-license
+        documentLastFour:
+          type: string
+          minLength: 4
+          maxLength: 4
+          example: "2144"
+    IdentityVerification:
+      allOf:
+        - $ref: "#/components/schemas/IdentityVerificationRequest"
+        - type: object
+          required:
+            - verificationStatus
+          properties:
+            verificationStatus:
+              type: string
+              enum:
+                - pending
+                - verified
+                - failed
+              example: pending
+    Funding:
+      type: object
+      required:
+        - initialDepositAmount
+        - fundingMethod
+        - externalAccountLastFour
+      properties:
+        initialDepositAmount:
+          type: number
+          format: double
+          minimum: 0
+          example: 500
+        fundingMethod:
+          type: string
+          enum:
+            - ach
+            - debit-card
+            - branch-cash
+            - none
+          example: ach
+        externalAccountLastFour:
+          type: string
+          minLength: 4
+          maxLength: 4
+          example: "4301"
+    CreateAccountApplicationRequest:
+      type: object
+      required:
+        - productCode
+        - accountType
+        - primaryApplicant
+        - identityVerification
+        - funding
+      properties:
+        productCode:
+          type: string
+          example: NSB_EVERYDAY_CHECKING
+        accountType:
+          $ref: "#/components/schemas/AccountType"
+        primaryApplicant:
+          $ref: "#/components/schemas/PrimaryApplicant"
+        identityVerification:
+          $ref: "#/components/schemas/IdentityVerificationRequest"
+        funding:
+          $ref: "#/components/schemas/Funding"
+    UpdateApplicationStatusRequest:
+      type: object
+      required:
+        - status
+        - reason
+      properties:
+        status:
+          $ref: "#/components/schemas/ApplicationStatus"
+        reason:
+          type: string
+          minLength: 3
+          example: Applicant identity documents received.
+    AccountApplication:
+      type: object
+      required:
+        - applicationId
+        - status
+        - productCode
+        - accountType
+        - primaryApplicant
+        - identityVerification
+        - funding
+        - riskScore
+        - submittedAt
+        - updatedAt
+      properties:
+        applicationId:
+          type: string
+          example: app_demo_1001
+        status:
+          $ref: "#/components/schemas/ApplicationStatus"
+        productCode:
+          type: string
+          example: NSB_EVERYDAY_CHECKING
+        accountType:
+          $ref: "#/components/schemas/AccountType"
+        primaryApplicant:
+          $ref: "#/components/schemas/PrimaryApplicant"
+        identityVerification:
+          $ref: "#/components/schemas/IdentityVerification"
+        funding:
+          $ref: "#/components/schemas/Funding"
+        riskScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 12
+        submittedAt:
+          type: string
+          format: date-time
+          example: "2026-05-01T14:12:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-05-01T14:12:00.000Z"
+    ResponseMeta:
+      type: object
+      required:
+        - correlationId
+        - timestamp
+      properties:
+        correlationId:
+          type: string
+          example: corr_demo_e755d6a3-1807-4562-a1a4-8d2a6db974b1
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-05-12T16:21:00.000Z"
+    ListResponseMeta:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMeta"
+        - type: object
+          required:
+            - count
+            - limit
+            - offset
+          properties:
+            count:
+              type: integer
+              example: 1
+            limit:
+              type: integer
+              example: 25
+            offset:
+              type: integer
+              example: 0
+    AccountApplicationEnvelope:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/AccountApplication"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    AccountApplicationListEnvelope:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountApplication"
+          example:
+            - applicationId: app_demo_1001
+              status: submitted
+              productCode: NSB_EVERYDAY_CHECKING
+              accountType: checking
+              primaryApplicant:
+                firstName: Alex
+                lastName: Morgan
+                email: alex.morgan@example.com
+                phone: "+1-303-555-0101"
+                dateOfBirth: "1988-06-12"
+                taxResidency: US
+                address:
+                  line1: 1800 Blake Street
+                  line2: Apt 4B
+                  city: Denver
+                  state: CO
+                  postalCode: "80202"
+                  country: US
+              identityVerification:
+                method: document-upload
+                documentType: drivers-license
+                documentLastFour: "2144"
+                verificationStatus: pending
+              funding:
+                initialDepositAmount: 500
+                fundingMethod: ach
+                externalAccountLastFour: "4301"
+              riskScore: 12
+              submittedAt: "2026-05-01T14:12:00.000Z"
+              updatedAt: "2026-05-01T14:12:00.000Z"
+        meta:
+          $ref: "#/components/schemas/ListResponseMeta"
+    DeleteAccountApplicationResult:
+      type: object
+      required:
+        - applicationId
+        - status
+        - deleted
+      properties:
+        applicationId:
+          type: string
+          example: app_demo_1003
+        status:
+          type: string
+          enum:
+            - cancelled
+          example: cancelled
+        deleted:
+          type: boolean
+          example: true
+    DeleteAccountApplicationEnvelope:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/DeleteAccountApplicationResult"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - service
+        - timestamp
+        - correlationId
+      properties:
+        status:
+          type: string
+          example: healthy
+        service:
+          type: string
+          example: Digital Account Opening API
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-05-12T16:20:00.000Z"
+        correlationId:
+          type: string
+          example: corr_demo_8f2a9f66-55be-4f01-94b5-1093ed6249a9
+    Error:
+      type: object
+      required:
+        - code
+        - message
+        - correlationId
+      properties:
+        code:
+          type: string
+          example: STRING_CODE
+        message:
+          type: string
+          example: Human-readable message
+        correlationId:
+          type: string
+          example: corr_demo_123
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          $ref: "#/components/schemas/Error"

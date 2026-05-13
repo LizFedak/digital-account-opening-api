@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "digital-account-opening-api.fullname" . }}
+  labels:
+    {{- include "digital-account-opening-api.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "digital-account-opening-api.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "digital-account-opening-api.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ include "digital-account-opening-api.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "digital-account-opening-api.fullname" . }}
+                  key: PORT
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "digital-account-opening-api.fullname" . }}
+                  key: API_KEY
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+              httpHeaders:
+                - name: x-api-key
+                  value: {{ .Values.apiKeySecret.value | quote }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+              httpHeaders:
+                - name: x-api-key
+                  value: {{ .Values.apiKeySecret.value | quote }}
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3

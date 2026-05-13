@@ -1,0 +1,10 @@
+node_modules
+npm-debug.log
+.DS_Store
+.git
+.gitignore
+coverage
+postman
+helm
+README.md
+PARTNER_API_GUIDE.md
