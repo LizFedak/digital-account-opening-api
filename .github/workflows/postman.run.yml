@@ -29,4 +29,4 @@ jobs:
         run: postman spec lint ./openapi.yaml --workspace-id 445f54a3-9b60-4f86-9b0a-a026856a185a --report-events
 
       - name: Run Postman collection
-        run: postman collection run 9474696-532665ab-6df5-4012-9e79-ba4e03e341f2 -e 9474696-f7bc5d0c-675f-46fa-9c0c-f9647da8197b -i 9474696-4f8dc599-d3b1-4457-ba44-87b536c92b8b --report-events
+        run: postman collection run 9474696-3ecd63be-43af-451c-8d0f-810f7f7ad77a -e 9474696-21e13fae-8143-4728-b4ad-878fe437ddcf -i 9474696-4f8dc599-d3b1-4457-ba44-87b536c92b8b --report-events
