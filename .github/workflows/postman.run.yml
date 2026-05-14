@@ -1,0 +1,29 @@
+name: API Quality Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  postman-api-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Postman CLI
+        run: curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
+
+      - name: Login to Postman
+        run: postman login --with-api-key "${{ secrets.POSTMAN_API_KEY }}"
+
+      - name: Lint OpenAPI spec
+        run: postman spec lint ./openapi.yaml --workspace-id 445f54a3-9b60-4f86-9b0a-a026856a185a --report-events
+
+      - name: Run Postman collection
+        run: postman collection run 9474696-532665ab-6df5-4012-9e79-ba4e03e341f2 -e 9474696-f7bc5d0c-675f-46fa-9c0c-f9647da8197b --report-events

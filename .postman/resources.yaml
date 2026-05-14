@@ -1,11 +1,15 @@
 workspace:
-  id: 445f54a3-9b60-4f86-9b0a-a026856a185a
+  id: "445f54a3-9b60-4f86-9b0a-a026856a185a"
+
 localResources:
   specs:
     - ../openapi.yaml
   collections:
     - ../postman/collections/Northstar Bank - Digital Account Opening API
     - ../postman/collections/Northstar Bank - Digital Account Opening API Copy
+
+# Each entry here maps a local resource to one or more corresponding objects in Postman Cloud
+
 cloudResources:
   collections:
     ../postman/collections/Northstar Bank - Digital Account Opening API: 9474696-532665ab-6df5-4012-9e79-ba4e03e341f2
