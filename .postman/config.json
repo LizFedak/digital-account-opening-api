@@ -1,0 +1,17 @@
+{
+  "workspace": {
+    "id": "445f54a3-9b60-4f86-9b0a-a026856a185a"
+  },
+  "entities": {
+    "collections": [
+      "../postman/collections/Northstar Bank - Digital Account Opening API_9474696-532665ab-6df5-4012-9e79-ba4e03e341f2.postman_collection.json",
+      "../postman/collections/digital-account-opening-api_9474696-56c99502-3bc4-4e3a-813f-63430b558250.postman_collection.json"
+    ],
+    "environments": [
+      "../postman/environments/Production_9474696-f7bc5d0c-675f-46fa-9c0c-f9647da8197b.postman_environment.json"
+    ],
+    "specs": [],
+    "flows": [],
+    "globals": []
+  }
+}

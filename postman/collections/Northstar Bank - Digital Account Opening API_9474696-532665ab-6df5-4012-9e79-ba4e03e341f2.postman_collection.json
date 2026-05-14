@@ -1,0 +1,981 @@
+{
+  "info": {
+    "_postman_id": "532665ab-6df5-4012-9e79-ba4e03e341f2",
+    "name": "Northstar Bank - Digital Account Opening API",
+    "description": "Demo collection for the Digital Account Opening API. Includes ordered end-to-end workflow tests, smoke checks, CRUD operations, and negative tests for Postman Enterprise demonstrations.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "📁 E2E Workflow",
+      "item": [
+        {
+          "name": "POST /account-applications — should create a new application and return 201",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "10328d47-e3cf-40ac-b57f-f934a88daee0",
+                "exec": [
+                  "const suffix = Date.now();",
+                  "pm.collectionVariables.set('uniqueEmail', `e2e.applicant.${suffix}@example.com`);",
+                  "console.log(`[Northstar Demo] Generated E2E applicant email ${pm.collectionVariables.get('uniqueEmail')}`);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "9970b5a3-f497-494f-a4b1-ed66ecc06c24",
+                "exec": [
+                  "pm.test('POST /account-applications — should create a new application and return 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('Response should include data and meta envelopes', function () {",
+                  "  pm.expect(json).to.have.property('data');",
+                  "  pm.expect(json).to.have.property('meta');",
+                  "  pm.expect(json.meta).to.have.property('correlationId');",
+                  "  pm.expect(json.meta).to.have.property('timestamp');",
+                  "});",
+                  "pm.test('Application contract should include all OAS fields', function () {",
+                  "  const app = json.data;",
+                  "  ['applicationId', 'status', 'productCode', 'accountType', 'primaryApplicant', 'identityVerification', 'funding', 'riskScore', 'submittedAt', 'updatedAt'].forEach((field) => pm.expect(app).to.have.property(field));",
+                  "  ['firstName', 'lastName', 'email', 'phone', 'dateOfBirth', 'taxResidency', 'address'].forEach((field) => pm.expect(app.primaryApplicant).to.have.property(field));",
+                  "  ['line1', 'city', 'state', 'postalCode', 'country'].forEach((field) => pm.expect(app.primaryApplicant.address).to.have.property(field));",
+                  "  ['method', 'documentType', 'documentLastFour', 'verificationStatus'].forEach((field) => pm.expect(app.identityVerification).to.have.property(field));",
+                  "  ['initialDepositAmount', 'fundingMethod', 'externalAccountLastFour'].forEach((field) => pm.expect(app.funding).to.have.property(field));",
+                  "});",
+                  "pm.test('Created application should have submitted status and pending verification', function () {",
+                  "  pm.expect(json.data.status).to.eql('submitted');",
+                  "  pm.expect(json.data.identityVerification.verificationStatus).to.eql('pending');",
+                  "  pm.expect(json.data.riskScore).to.be.a('number');",
+                  "});",
+                  "pm.collectionVariables.set('createdApplicationId', json.data.applicationId);",
+                  "pm.collectionVariables.set('applicationId', json.data.applicationId);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "id": "3da0c90b-a9cf-4b8c-939a-3bd06eaad588",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{correlationId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"applicant\": {\n    \"firstName\": \"Riley\",\n    \"lastName\": \"Chen\",\n    \"dateOfBirth\": \"1990-05-24\",\n    \"email\": \"riley.chen@example.com\",\n    \"phone\": \"+1-303-555-0144\",\n    \"taxResidencyCountry\": \"US\",\n    \"residentialAddress\": {\n      \"line1\": \"700 17th Street\",\n      \"city\": \"Denver\",\n      \"state\": \"CO\",\n      \"postalCode\": \"80202\",\n      \"country\": \"US\"\n    }\n  },\n  \"product\": {\n    \"productType\": \"checking\",\n    \"initialDepositAmount\": 1500,\n    \"fundingSource\": \"ach\"\n  },\n  \"consents\": {\n    \"termsAccepted\": true,\n    \"privacyNoticeAccepted\": true,\n    \"creditCheckAuthorized\": true\n  },\n  \"channel\": \"web\",\n  \"branchCode\": \"DEN-001\"\n}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/account-applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "account-applications"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /account-applications/:id — should retrieve the newly created application",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GET /account-applications/:id — should return 200 for created application', function () {\n  pm.response.to.have.status(200);\n});\nconst json = pm.response.json();\npm.test('Response should include account application envelope', function () {\n  pm.expect(json).to.have.property('data');\n  pm.expect(json).to.have.nested.property('meta.correlationId');\n});\npm.test('Retrieved ID should match collection variable', function () {\n  pm.expect(json.data.applicationId).to.eql(pm.collectionVariables.get('createdApplicationId'));\n});\npm.test('Application should still be submitted before status update', function () {\n  pm.expect(json.data.status).to.eql('submitted');\n  pm.expect(json.data.primaryApplicant.email).to.eql(pm.collectionVariables.get('uniqueEmail'));\n});"
+                ]
+              }
+            }
+          ],
+          "id": "e107d2d5-a614-4cd7-bd48-5e2c5a7e57c8",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{correlationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/account-applications/{{createdApplicationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "account-applications",
+                "{{createdApplicationId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /account-applications/:id/status — should move application into review",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "449f9fa8-cebd-4d5b-a461-8e687da427d3",
+                "exec": [
+                  "pm.test('PATCH /account-applications/:id/status — should return 200 for valid transition', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('Response should include updated application envelope', function () {",
+                  "  pm.expect(json).to.have.property('data');",
+                  "  pm.expect(json).to.have.nested.property('meta.correlationId');",
+                  "});",
+                  "pm.test('Business logic should set status to in-review and verification to verified', function () {",
+                  "  pm.expect(json.data.applicationId).to.eql(pm.collectionVariables.get('createdApplicationId'));",
+                  "  pm.expect(json.data.status).to.eql('in-review');",
+                  "  pm.expect(json.data.identityVerification.verificationStatus).to.eql('verified');",
+                  "});",
+                  "pm.test('Updated timestamp should be present', function () {",
+                  "  pm.expect(json.data.updatedAt).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "id": "2bccc092-e58f-47dc-a9d0-f58933f1e12c",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{correlationId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"under-review\",\n  \"reason\": \"Applicant identity documents received.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/account-applications/{{createdApplicationId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "account-applications",
+                "{{createdApplicationId}}",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /account-applications/:id/status — should approve reviewed application",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('PATCH /account-applications/:id/status — should approve reviewed application', function () {\n  pm.response.to.have.status(200);\n});\nconst json = pm.response.json();\npm.test('Approved application should keep verified identity state', function () {\n  pm.expect(json.data.status).to.eql('approved');\n  pm.expect(json.data.identityVerification.verificationStatus).to.eql('verified');\n  pm.expect(json.data.applicationId).to.eql(pm.collectionVariables.get('createdApplicationId'));\n});\npm.test('Response should include correlation metadata', function () {\n  pm.expect(json).to.have.nested.property('meta.correlationId');\n  pm.expect(json).to.have.nested.property('meta.timestamp');\n});"
+                ]
+              }
+            }
+          ],
+          "id": "e820e180-3bea-4657-b466-c09aebf5c25d",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{correlationId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\",\n  \"reason\": \"Risk and identity checks passed.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/account-applications/{{createdApplicationId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "account-applications",
+                "{{createdApplicationId}}",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /account-applications/:id — should verify final approved state",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GET /account-applications/:id — should verify final approved state', function () {\n  pm.response.to.have.status(200);\n});\nconst json = pm.response.json();\npm.test('Final state should be approved', function () {\n  pm.expect(json.data.applicationId).to.eql(pm.collectionVariables.get('createdApplicationId'));\n  pm.expect(json.data.status).to.eql('approved');\n  pm.expect(json.data.identityVerification.verificationStatus).to.eql('verified');\n});\npm.test('Final response should satisfy contract shape', function () {\n  pm.expect(json.data.riskScore).to.be.a('number');\n  pm.expect(json.data.funding.initialDepositAmount).to.be.a('number');\n  pm.expect(json.meta.correlationId).to.be.a('string');\n});"
+                ]
+              }
+            }
+          ],
+          "id": "78659cd9-1eb2-436b-b11c-b7e5215376f4",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{correlationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/account-applications/{{createdApplicationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "account-applications",
+                "{{createdApplicationId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "4f305445-0f16-4425-b180-40cc88cf61c0",
+      "description": "Ordered lifecycle flow: create, read, move into review, approve, and verify final state."
+    },
+    {
+      "name": "📁 Smoke Tests",
+      "item": [
+        {
+          "name": "GET /health — should return healthy status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GET /health — should return healthy status', function () {\n  pm.response.to.have.status(200);\n});\nconst json = pm.response.json();\npm.test('Health response should include service status and correlation ID', function () {\n  pm.expect(json.status).to.eql('healthy');\n  pm.expect(json.service).to.eql('Digital Account Opening API');\n  pm.expect(json.timestamp).to.be.a('string');\n  pm.expect(json.correlationId).to.be.a('string');\n});"
+                ]
+              }
+            }
+          ],
+          "id": "d22e5f1a-aeb0-4919-a96f-c694b8f07ca7",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{correlationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /account-applications — should list seeded applications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GET /account-applications — should list seeded applications', function () {\n  pm.response.to.have.status(200);\n});\nconst json = pm.response.json();\npm.test('List response should include array data and pagination meta', function () {\n  pm.expect(json.data).to.be.an('array');\n  pm.expect(json.data.length).to.be.greaterThan(0);\n  pm.expect(json.meta.count).to.be.a('number');\n  pm.expect(json.meta.limit).to.be.a('number');\n  pm.expect(json.meta.offset).to.be.a('number');\n});\npm.test('First application should include contract fields', function () {\n  const app = json.data[0];\n  ['applicationId', 'status', 'productCode', 'accountType', 'primaryApplicant', 'identityVerification', 'funding', 'riskScore', 'submittedAt', 'updatedAt'].forEach((field) => pm.expect(app).to.have.property(field));\n});"
+                ]
+              }
+            }
+          ],
+          "id": "f5c4db72-24c0-4ae7-b42a-519ba13fe18d",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{correlationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/account-applications?limit=5&offset=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "account-applications"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /health — should reject invalid API key with 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GET /health — should reject invalid API key with 401', function () {\n  pm.response.to.have.status(401);\n});\nconst json = pm.response.json();\npm.test('Unauthorized response should include standard error contract', function () {\n  pm.expect(json).to.have.property('error');\n  pm.expect(json.error.code).to.eql('UNAUTHORIZED');\n  pm.expect(json.error.message).to.be.a('string');\n  pm.expect(json.error.correlationId).to.be.a('string');\n});"
+                ]
+              }
+            }
+          ],
+          "id": "dd3494c8-c761-464f-ac01-a2e22236fd82",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "invalid-key"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{correlationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "7ba39bac-dc1e-418e-bbab-5299793063e6",
+      "description": "Fast checks for health, a basic authenticated read, and authentication failure."
+    },
+    {
+      "name": "📁 CRUD Operations",
+      "item": [
+        {
+          "name": "POST /account-applications — should create CRUD fixture",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "a650ec99-d91b-4d75-bf4d-3d0beb8add25",
+                "exec": [
+                  "const suffix = Date.now();",
+                  "pm.collectionVariables.set('uniqueEmail', `crud.applicant.${suffix}@example.com`);",
+                  "console.log(`[Northstar Demo] Generated CRUD applicant email ${pm.collectionVariables.get('uniqueEmail')}`);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "541f6701-6743-4955-9b7e-052332011a6d",
+                "exec": [
+                  "pm.test('POST /account-applications — should create CRUD fixture', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('Create response should include application contract', function () {",
+                  "  pm.expect(json.data.applicationId).to.be.a('string');",
+                  "  pm.expect(json.data.status).to.eql('submitted');",
+                  "  pm.expect(json.data.primaryApplicant.email).to.eql(pm.collectionVariables.get('uniqueEmail'));",
+                  "  pm.expect(json.meta.correlationId).to.be.a('string');",
+                  "});",
+                  "pm.collectionVariables.set('crudApplicationId', json.data.applicationId);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "id": "55f1855a-cb44-4564-9274-383c7b186f2f",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{correlationId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"applicant\": {\n    \"firstName\": \"Riley\",\n    \"lastName\": \"Chen\",\n    \"dateOfBirth\": \"1990-05-24\",\n    \"email\": \"riley.chen@example.com\",\n    \"phone\": \"+1-303-555-0144\",\n    \"taxResidencyCountry\": \"US\",\n    \"residentialAddress\": {\n      \"line1\": \"700 17th Street\",\n      \"city\": \"Denver\",\n      \"state\": \"CO\",\n      \"postalCode\": \"80202\",\n      \"country\": \"US\"\n    }\n  },\n  \"product\": {\n    \"productType\": \"checking\",\n    \"initialDepositAmount\": 1500,\n    \"fundingSource\": \"ach\"\n  },\n  \"consents\": {\n    \"termsAccepted\": true,\n    \"privacyNoticeAccepted\": true,\n    \"creditCheckAuthorized\": true\n  },\n  \"channel\": \"web\",\n  \"branchCode\": \"DEN-001\"\n}\n\n// {\n//   \"productCode\": \"NSB_HIGH_YIELD_SAVINGS\",\n//   \"accountType\": \"savings\",\n//   \"primaryApplicant\": {\n//     \"firstName\": \"Taylor\",\n//     \"lastName\": \"Nguyen\",\n//     \"email\": \"{{uniqueEmail}}\",\n//     \"phone\": \"+1-303-555-0177\",\n//     \"dateOfBirth\": \"1985-08-21\",\n//     \"taxResidency\": \"US\",\n//     \"address\": {\n//       \"line1\": \"1600 Wynkoop Street\",\n//       \"line2\": \"Unit 12\",\n//       \"city\": \"Denver\",\n//       \"state\": \"CO\",\n//       \"postalCode\": \"80202\",\n//       \"country\": \"US\"\n//     }\n//   },\n//   \"identityVerification\": {\n//     \"method\": \"partner-kyc\",\n//     \"documentType\": \"passport\",\n//     \"documentLastFour\": \"5519\"\n//   },\n//   \"funding\": {\n//     \"initialDepositAmount\": 1200,\n//     \"fundingMethod\": \"ach\",\n//     \"externalAccountLastFour\": \"2210\"\n//   }\n// }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/account-applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "account-applications"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /account-applications — should support status filtering and pagination",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GET /account-applications — should support status filtering and pagination', function () {\n  pm.response.to.have.status(200);\n});\nconst json = pm.response.json();\npm.test('Filtered list should return only submitted applications', function () {\n  pm.expect(json.data).to.be.an('array');\n  json.data.forEach((app) => pm.expect(app.status).to.eql('submitted'));\n  pm.expect(json.meta.limit).to.eql(10);\n  pm.expect(json.meta.offset).to.eql(0);\n});\npm.test('List item data types should match contract', function () {\n  if (json.data.length > 0) {\n    pm.expect(json.data[0].applicationId).to.be.a('string');\n    pm.expect(json.data[0].riskScore).to.be.a('number');\n    pm.expect(json.data[0].funding.initialDepositAmount).to.be.a('number');\n  }\n});"
+                ]
+              }
+            }
+          ],
+          "id": "bbb8a680-78f2-4108-bd15-aa8a93f810e7",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{correlationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/account-applications?status=submitted&limit=10&offset=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "account-applications"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "submitted"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /account-applications/:id — should retrieve CRUD fixture",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GET /account-applications/:id — should retrieve CRUD fixture', function () {\n  pm.response.to.have.status(200);\n});\nconst json = pm.response.json();\npm.test('Retrieved CRUD fixture should match saved ID', function () {\n  pm.expect(json.data.applicationId).to.eql(pm.collectionVariables.get('crudApplicationId'));\n  pm.expect(json.data.status).to.eql('submitted');\n  pm.expect(json.meta.correlationId).to.be.a('string');\n});"
+                ]
+              }
+            }
+          ],
+          "id": "458381f7-77f2-4450-ae5e-2914d09fe92f",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{correlationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/account-applications/{{crudApplicationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "account-applications",
+                "{{crudApplicationId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /account-applications/:id/status — should update CRUD fixture status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "083d949d-663d-4e7f-8d3a-103113e7a116",
+                "exec": [
+                  "pm.test('PATCH /account-applications/:id/status — should update CRUD fixture status', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('CRUD fixture should move to in-review', function () {",
+                  "  pm.expect(json.data.applicationId).to.eql(pm.collectionVariables.get('crudApplicationId'));",
+                  "  pm.expect(json.data.status).to.eql('in-review');",
+                  "  pm.expect(json.data.identityVerification.verificationStatus).to.eql('verified');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "id": "e2d50a4b-c613-4f87-922b-e4b97a0a80a2",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{correlationId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"under-review\",\n  \"reason\": \"Manual review started for CRUD test fixture.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/account-applications/{{crudApplicationId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "account-applications",
+                "{{crudApplicationId}}",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /account-applications/:id — should cancel and remove CRUD fixture",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('DELETE /account-applications/:id — should cancel and remove CRUD fixture', function () {\n  pm.response.to.have.status(200);\n});\nconst json = pm.response.json();\npm.test('Delete response should include cancellation result', function () {\n  pm.expect(json.data.applicationId).to.eql(pm.collectionVariables.get('crudApplicationId'));\n  pm.expect(json.data.status).to.eql('cancelled');\n  pm.expect(json.data.deleted).to.eql(true);\n  pm.expect(json.meta.correlationId).to.be.a('string');\n});"
+                ]
+              }
+            }
+          ],
+          "id": "0a2d448f-e3d2-44e1-b933-94c030f8c8fc",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{correlationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/account-applications/{{crudApplicationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "account-applications",
+                "{{crudApplicationId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "b0bfbe32-eeb0-4988-9625-17e31e52bf83",
+      "description": "Individual endpoint requests for exploratory testing and API contract validation."
+    },
+    {
+      "name": "📁 Negative Tests",
+      "item": [
+        {
+          "name": "GET /account-applications — should return 401 for invalid API key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GET /account-applications — should return 401 for invalid API key', function () {\n  pm.response.to.have.status(401);\n});\nconst json = pm.response.json();\npm.test('Invalid auth response should match error schema', function () {\n  pm.expect(json.error.code).to.eql('UNAUTHORIZED');\n  pm.expect(json.error.message).to.be.a('string');\n  pm.expect(json.error.correlationId).to.be.a('string');\n});"
+                ]
+              }
+            }
+          ],
+          "id": "8372506d-5c90-4c1b-a738-e2747bc723b7",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "invalid-key"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{correlationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/account-applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "account-applications"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /account-applications — should return 400 for missing required fields",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('POST /account-applications — should return 400 for missing required fields', function () {\n  pm.response.to.have.status(400);\n});\nconst json = pm.response.json();\npm.test('Validation error should use standard error schema', function () {\n  pm.expect(json.error.code).to.eql('VALIDATION_ERROR');\n  pm.expect(json.error.message).to.include('productCode');\n  pm.expect(json.error.correlationId).to.be.a('string');\n});"
+                ]
+              }
+            }
+          ],
+          "id": "d94eb645-7823-4cf0-8f38-1b7e15eff0a7",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{correlationId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountType\": \"checking\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/account-applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "account-applications"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /account-applications/:id — should return 404 for unknown ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GET /account-applications/:id — should return 404 for unknown ID', function () {\n  pm.response.to.have.status(404);\n});\nconst json = pm.response.json();\npm.test('Not found response should use standard error schema', function () {\n  pm.expect(json.error.code).to.eql('APPLICATION_NOT_FOUND');\n  pm.expect(json.error.message).to.include('app_demo_unknown');\n  pm.expect(json.error.correlationId).to.be.a('string');\n});"
+                ]
+              }
+            }
+          ],
+          "id": "373b2304-5303-46d1-8257-98f9d2b82426",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{correlationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/account-applications/app_demo_unknown",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "account-applications",
+                "app_demo_unknown"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /account-applications/:id/status — should return 409 for invalid transition",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "2a372bea-4b35-4d80-86e6-d81a5dec1720",
+                "exec": [
+                  "pm.test('PATCH /account-applications/:id/status — should return 409 for invalid transition', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('Conflict response should explain invalid state transition', function () {",
+                  "  pm.expect(json.error.code).to.eql('INVALID_STATUS_TRANSITION');",
+                  "  pm.expect(json.error.message).to.include('approved');",
+                  "  pm.expect(json.error.correlationId).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "id": "b85e3b40-0151-486e-9beb-04e0167ae736",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{correlationId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"under-review\",\n  \"reason\": \"Attempt to move approved application backward.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/account-applications/{{approvedApplicationId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "account-applications",
+                "{{approvedApplicationId}}",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "46643a03-ee08-4342-804a-cdecaef96d97",
+      "description": "Expected failures for authentication, validation, missing records, and invalid state transitions."
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "id": "82cd0c96-97d7-4d45-be0d-9a9073778060",
+        "type": "text/javascript",
+        "requests": {},
+        "exec": [
+          "const correlationId = `corr_demo_postman_${Date.now()}`;",
+          "pm.collectionVariables.set('correlationId', correlationId);",
+          "console.log(`[Northstar Demo] ${pm.request.method} ${pm.request.url.toString()} correlationId=${correlationId}`);"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "id": "8c9c88dc-f3bd-4f96-b034-2f0a390aa26d",
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3002"
+    },
+    {
+      "key": "apiKey",
+      "value": "demo-key"
+    },
+    {
+      "key": "applicationId",
+      "value": "app_demo_1001"
+    },
+    {
+      "key": "approvedApplicationId",
+      "value": "app_demo_1003"
+    },
+    {
+      "key": "createdApplicationId",
+      "value": ""
+    },
+    {
+      "key": "crudApplicationId",
+      "value": ""
+    },
+    {
+      "key": "uniqueEmail",
+      "value": "demo.applicant@example.com"
+    },
+    {
+      "key": "correlationId",
+      "value": "corr_demo_postman_seed"
+    }
+  ]
+}
