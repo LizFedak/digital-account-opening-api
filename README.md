@@ -9,7 +9,7 @@ Northstar Bank's Digital Account Opening API powers the intake, review, and life
 ```bash
 npm install
 npm start
-# Server running at http://localhost:3000
+# Server running at http://localhost:3002
 ```
 
 The API key defaults to `demo-key`. Set `API_KEY` to override it and `PORT` to change the local port.
@@ -18,16 +18,16 @@ The API key defaults to `demo-key`. Set `API_KEY` to override it and `PORT` to c
 
 ```bash
 # Happy path
-curl http://localhost:3000/health -H "x-api-key: demo-key"
+curl http://localhost:3002/health -H "x-api-key: demo-key"
 
 # Unauthorized
-curl http://localhost:3000/health -H "x-api-key: wrong-key"
+curl http://localhost:3002/health -H "x-api-key: wrong-key"
 ```
 
 Create an application:
 
 ```bash
-curl -X POST http://localhost:3000/account-applications \
+curl -X POST http://localhost:3002/account-applications \
   -H "x-api-key: demo-key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -80,7 +80,7 @@ All endpoints require `x-api-key`. Responses include a correlation ID either in 
 1. Import `openapi.yaml` as the API definition.
 2. Import `postman/collection.json`.
 3. Import `postman/environment.json` and select `Northstar Bank — Digital Account Opening API`.
-4. Confirm `baseUrl` is `http://localhost:3000` and `apiKey` is `demo-key`.
+4. Confirm `baseUrl` is `http://localhost:3002` and `apiKey` is `demo-key`.
 5. Run the collection folders in order for the full demo: `E2E Workflow`, `Smoke Tests`, `CRUD Operations`, then `Negative Tests`.
 
 The collection captures generated application IDs with `pm.collectionVariables.set()` and reuses them with `pm.collectionVariables.get()` so the workflow can create, read, update, and verify real in-memory resources during a run.
@@ -89,7 +89,7 @@ The collection captures generated application IDs with `pm.collectionVariables.s
 
 ```bash
 docker build -t northstar/digital-account-opening-api:1.0.0 .
-docker run --rm -p 3000:3000 -e API_KEY=demo-key northstar/digital-account-opening-api:1.0.0
+docker run --rm -p 3002:3002 -e API_KEY=demo-key northstar/digital-account-opening-api:1.0.0
 ```
 
 ## Helm

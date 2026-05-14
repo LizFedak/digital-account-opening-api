@@ -1,0 +1,68 @@
+name: Deploy Digital Account Opening API to EKS
+
+on:
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  EKS_CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME }}
+  K8S_NAMESPACE: northstar
+  SERVICE_NAME: digital-account-opening-api
+  CHART_PATH: ./helm/digital-account-opening-api
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set image variables
+        run: |
+          AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "ECR_REPOSITORY=$AWS_ACCOUNT_ID.dkr.ecr.${AWS_REGION}.amazonaws.com/${SERVICE_NAME}" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - name: Ensure ECR repository exists
+        run: |
+          aws ecr describe-repositories --repository-names "$SERVICE_NAME" >/dev/null 2>&1 || \
+          aws ecr create-repository --repository-name "$SERVICE_NAME"
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        run: |
+          docker build -t "$ECR_REPOSITORY:$IMAGE_TAG" .
+          docker push "$ECR_REPOSITORY:$IMAGE_TAG"
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --region "$AWS_REGION" \
+            --name "$EKS_CLUSTER_NAME"
+
+      - name: Create namespace
+        run: |
+          kubectl create namespace "$K8S_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install "$SERVICE_NAME" "$CHART_PATH" \
+            --namespace "$K8S_NAMESPACE" \
+            --set image.repository="$ECR_REPOSITORY" \
+            --set image.tag="$IMAGE_TAG" \
+            --wait
+
+      - name: Show rollout status
+        run: |
+          kubectl rollout status deployment/"$SERVICE_NAME" -n "$K8S_NAMESPACE"
+          kubectl get pods -n "$K8S_NAMESPACE"

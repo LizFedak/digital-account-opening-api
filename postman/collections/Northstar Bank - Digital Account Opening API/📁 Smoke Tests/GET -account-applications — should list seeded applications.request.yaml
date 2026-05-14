@@ -1,0 +1,30 @@
+$kind: http-request
+name: GET /account-applications — should list seeded applications
+url: "{{baseUrl}}/account-applications?limit=5&offset=0"
+method: GET
+headers:
+  x-api-key: "{{apiKey}}"
+  x-correlation-id: "{{correlationId}}"
+queryParams:
+  limit: "5"
+  offset: "0"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('GET /account-applications — should list seeded applications', function () {
+        pm.response.to.have.status(200);
+      });
+      const json = pm.response.json();
+      pm.test('List response should include array data and pagination meta', function () {
+        pm.expect(json.data).to.be.an('array');
+        pm.expect(json.data.length).to.be.greaterThan(0);
+        pm.expect(json.meta.count).to.be.a('number');
+        pm.expect(json.meta.limit).to.be.a('number');
+        pm.expect(json.meta.offset).to.be.a('number');
+      });
+      pm.test('First application should include contract fields', function () {
+        const app = json.data[0];
+        ['applicationId', 'status', 'productCode', 'accountType', 'primaryApplicant', 'identityVerification', 'funding', 'riskScore', 'submittedAt', 'updatedAt'].forEach((field) => pm.expect(app).to.have.property(field));
+      });
+    language: text/javascript
+order: 2000

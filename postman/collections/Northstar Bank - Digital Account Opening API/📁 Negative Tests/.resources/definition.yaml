@@ -1,0 +1,3 @@
+$kind: collection
+description: Expected failures for authentication, validation, missing records, and invalid state transitions.
+order: 4000

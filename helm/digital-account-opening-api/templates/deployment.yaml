@@ -23,6 +23,14 @@ spec:
               containerPort: {{ .Values.service.targetPort }}
               protocol: TCP
           env:
+            {{- if .Values.insights.enabled }}
+            - name: POSTMAN_INSIGHTS_SERVICE_NAME
+              value: {{ .Values.insights.serviceName | quote }}
+            - name: POSTMAN_INSIGHTS_WORKSPACE_ID
+              value: {{ .Values.insights.POSTMAN_INSIGHTS_WORKSPACE_ID | quote }}
+            - name: POSTMAN_INSIGHTS_SYSTEM_ENV
+              value: {{ .Values.insights.POSTMAN_INSIGHTS_SYSTEM_ENV | quote }}
+            {{- end }}
             - name: PORT
               valueFrom:
                 configMapKeyRef:

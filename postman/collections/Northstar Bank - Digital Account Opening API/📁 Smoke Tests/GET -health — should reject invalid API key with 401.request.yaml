@@ -1,0 +1,22 @@
+$kind: http-request
+name: GET /health — should reject invalid API key with 401
+url: "{{baseUrl}}/health"
+method: GET
+headers:
+  x-api-key: invalid-key
+  x-correlation-id: "{{correlationId}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('GET /health — should reject invalid API key with 401', function () {
+        pm.response.to.have.status(401);
+      });
+      const json = pm.response.json();
+      pm.test('Unauthorized response should include standard error contract', function () {
+        pm.expect(json).to.have.property('error');
+        pm.expect(json.error.code).to.eql('UNAUTHORIZED');
+        pm.expect(json.error.message).to.be.a('string');
+        pm.expect(json.error.correlationId).to.be.a('string');
+      });
+    language: text/javascript
+order: 3002

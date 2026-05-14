@@ -1,0 +1,63 @@
+$kind: http-request
+name: POST /account-applications — should create CRUD fixture
+url: "{{baseUrl}}/account-applications"
+method: POST
+headers:
+  x-api-key: "{{apiKey}}"
+  x-correlation-id: "{{correlationId}}"
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "productCode": "NSB_HIGH_YIELD_SAVINGS",
+      "accountType": "savings",
+      "primaryApplicant": {
+        "firstName": "Taylor",
+        "lastName": "Nguyen",
+        "email": "{{uniqueEmail}}",
+        "phone": "+1-303-555-0177",
+        "dateOfBirth": "1985-08-21",
+        "taxResidency": "US",
+        "address": {
+          "line1": "1600 Wynkoop Street",
+          "line2": "Unit 12",
+          "city": "Denver",
+          "state": "CO",
+          "postalCode": "80202",
+          "country": "US"
+        }
+      },
+      "identityVerification": {
+        "method": "partner-kyc",
+        "documentType": "passport",
+        "documentLastFour": "5519"
+      },
+      "funding": {
+        "initialDepositAmount": 1200,
+        "fundingMethod": "ach",
+        "externalAccountLastFour": "2210"
+      }
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const suffix = Date.now();
+      pm.collectionVariables.set('uniqueEmail', `crud.applicant.${suffix}@example.com`);
+      console.log(`[Northstar Demo] Generated CRUD applicant email ${pm.collectionVariables.get('uniqueEmail')}`);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('POST /account-applications — should create CRUD fixture', function () {
+        pm.response.to.have.status(201);
+      });
+      const json = pm.response.json();
+      pm.test('Create response should include application contract', function () {
+        pm.expect(json.data.applicationId).to.be.a('string');
+        pm.expect(json.data.status).to.eql('submitted');
+        pm.expect(json.data.primaryApplicant.email).to.eql(pm.collectionVariables.get('uniqueEmail'));
+        pm.expect(json.meta.correlationId).to.be.a('string');
+      });
+      pm.collectionVariables.set('crudApplicationId', json.data.applicationId);
+    language: text/javascript
+order: 1000

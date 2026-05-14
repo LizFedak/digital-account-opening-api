@@ -1,0 +1,36 @@
+$kind: http-request
+name: PATCH /account-applications/:id/status — should move application into review
+url: "{{baseUrl}}/account-applications/{{createdApplicationId}}/status"
+method: PATCH
+headers:
+  x-api-key: "{{apiKey}}"
+  x-correlation-id: "{{correlationId}}"
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "status": "in-review",
+      "reason": "Applicant identity documents received."
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('PATCH /account-applications/:id/status — should return 200 for valid transition', function () {
+        pm.response.to.have.status(200);
+      });
+      const json = pm.response.json();
+      pm.test('Response should include updated application envelope', function () {
+        pm.expect(json).to.have.property('data');
+        pm.expect(json).to.have.nested.property('meta.correlationId');
+      });
+      pm.test('Business logic should set status to in-review and verification to verified', function () {
+        pm.expect(json.data.applicationId).to.eql(pm.collectionVariables.get('createdApplicationId'));
+        pm.expect(json.data.status).to.eql('in-review');
+        pm.expect(json.data.identityVerification.verificationStatus).to.eql('verified');
+      });
+      pm.test('Updated timestamp should be present', function () {
+        pm.expect(json.data.updatedAt).to.be.a('string');
+      });
+    language: text/javascript
+order: 3002

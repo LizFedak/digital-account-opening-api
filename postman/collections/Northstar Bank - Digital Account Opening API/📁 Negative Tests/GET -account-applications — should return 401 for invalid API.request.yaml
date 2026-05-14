@@ -1,0 +1,21 @@
+$kind: http-request
+name: GET /account-applications — should return 401 for invalid API key
+url: "{{baseUrl}}/account-applications"
+method: GET
+headers:
+  x-api-key: invalid-key
+  x-correlation-id: "{{correlationId}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('GET /account-applications — should return 401 for invalid API key', function () {
+        pm.response.to.have.status(401);
+      });
+      const json = pm.response.json();
+      pm.test('Invalid auth response should match error schema', function () {
+        pm.expect(json.error.code).to.eql('UNAUTHORIZED');
+        pm.expect(json.error.message).to.be.a('string');
+        pm.expect(json.error.correlationId).to.be.a('string');
+      });
+    language: text/javascript
+order: 1000

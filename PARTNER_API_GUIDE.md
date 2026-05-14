@@ -11,7 +11,7 @@ This demo API is intentionally lightweight and uses in-memory data, but the cont
 Every request requires an API key in the `x-api-key` header.
 
 ```bash
-curl http://localhost:3000/account-applications \
+curl http://localhost:3002/account-applications \
   -H "x-api-key: demo-key" \
   -H "x-correlation-id: corr_demo_partner_001"
 ```

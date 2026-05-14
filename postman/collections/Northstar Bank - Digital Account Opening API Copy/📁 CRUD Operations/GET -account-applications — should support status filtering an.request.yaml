@@ -1,0 +1,33 @@
+$kind: http-request
+name: GET /account-applications — should support status filtering and pagination
+url: "{{baseUrl}}/account-applications?status=submitted&limit=10&offset=0"
+method: GET
+headers:
+  x-api-key: "{{apiKey}}"
+  x-correlation-id: "{{correlationId}}"
+queryParams:
+  status: submitted
+  limit: "10"
+  offset: "0"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('GET /account-applications — should support status filtering and pagination', function () {
+        pm.response.to.have.status(200);
+      });
+      const json = pm.response.json();
+      pm.test('Filtered list should return only submitted applications', function () {
+        pm.expect(json.data).to.be.an('array');
+        json.data.forEach((app) => pm.expect(app.status).to.eql('submitted'));
+        pm.expect(json.meta.limit).to.eql(10);
+        pm.expect(json.meta.offset).to.eql(0);
+      });
+      pm.test('List item data types should match contract', function () {
+        if (json.data.length > 0) {
+          pm.expect(json.data[0].applicationId).to.be.a('string');
+          pm.expect(json.data[0].riskScore).to.be.a('number');
+          pm.expect(json.data[0].funding.initialDepositAmount).to.be.a('number');
+        }
+      });
+    language: text/javascript
+order: 2000

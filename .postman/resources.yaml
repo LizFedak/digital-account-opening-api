@@ -1,0 +1,14 @@
+workspace:
+  id: 445f54a3-9b60-4f86-9b0a-a026856a185a
+localResources:
+  specs:
+    - ../openapi.yaml
+  collections:
+    - ../postman/collections/Northstar Bank - Digital Account Opening API
+    - ../postman/collections/Northstar Bank - Digital Account Opening API Copy
+cloudResources:
+  collections:
+    ../postman/collections/Northstar Bank - Digital Account Opening API: 9474696-532665ab-6df5-4012-9e79-ba4e03e341f2
+    ../postman/collections/Northstar Bank - Digital Account Opening API Copy: 9474696-dCD51Bd8991EF18BD09E4e2A
+  specs:
+    ../openapi.yaml: 82aa6ae6-81a0-4c7b-b277-2186436c58e8

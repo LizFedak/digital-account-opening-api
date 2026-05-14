@@ -1,20 +1,39 @@
-replicaCount: 2
+replicaCount: 1
+
 image:
   repository: northstar/digital-account-opening-api
   tag: "1.0.0"
   pullPolicy: IfNotPresent
+
 service:
   type: ClusterIP
   port: 80
-  targetPort: 3000
+  targetPort: 3002
+
 ingress:
-  enabled: true
+  enabled: false
   hosts:
     - host: digital-account-opening-api.northstarbank.internal
       paths:
         - path: /
           pathType: Prefix
+
 env:
-  PORT: "3000"
+  PORT: "3002"
+
 apiKeySecret:
   value: "demo-key"
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+insights:
+  enabled: true
+  serviceName: "digital-account-opening-api"
+  workspaceId: "445f54a3-9b60-4f86-9b0a-a026856a185a"
+  systemEnvId: "019e2420-5909-7003-8225-f5c6a0d1b7d0"

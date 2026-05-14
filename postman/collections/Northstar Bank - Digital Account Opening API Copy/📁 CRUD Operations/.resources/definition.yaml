@@ -1,0 +1,3 @@
+$kind: collection
+description: Individual endpoint requests for exploratory testing and API contract validation.
+order: 3002

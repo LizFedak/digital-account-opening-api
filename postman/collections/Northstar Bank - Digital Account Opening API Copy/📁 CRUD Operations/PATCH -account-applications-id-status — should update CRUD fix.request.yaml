@@ -1,0 +1,29 @@
+$kind: http-request
+name: PATCH /account-applications/:id/status — should update CRUD fixture status
+url: "{{baseUrl}}/account-applications/{{crudApplicationId}}/status"
+method: PATCH
+headers:
+  x-api-key: "{{apiKey}}"
+  x-correlation-id: "{{correlationId}}"
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "status": "in-review",
+      "reason": "Manual review started for CRUD test fixture."
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('PATCH /account-applications/:id/status — should update CRUD fixture status', function () {
+        pm.response.to.have.status(200);
+      });
+      const json = pm.response.json();
+      pm.test('CRUD fixture should move to in-review', function () {
+        pm.expect(json.data.applicationId).to.eql(pm.collectionVariables.get('crudApplicationId'));
+        pm.expect(json.data.status).to.eql('in-review');
+        pm.expect(json.data.identityVerification.verificationStatus).to.eql('verified');
+      });
+    language: text/javascript
+order: 4000

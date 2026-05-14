@@ -1,0 +1,20 @@
+$kind: collection
+id: dCD51Bd8991EF18BD09E4e2A
+name: Northstar Bank - Digital Account Opening API Copy
+description: Demo collection for the Digital Account Opening API. Includes ordered end-to-end workflow tests, smoke checks, CRUD operations, and negative tests for Postman Enterprise demonstrations.
+variables:
+  baseUrl: http://localhost:3002
+  apiKey: demo-key
+  applicationId: app_demo_1001
+  approvedApplicationId: app_demo_1003
+  createdApplicationId: ""
+  crudApplicationId: ""
+  uniqueEmail: demo.applicant@example.com
+  correlationId: corr_demo_postman_seed
+scripts:
+  - type: http:beforeRequest
+    code: |-
+      const correlationId = `corr_demo_postman_${Date.now()}`;
+      pm.collectionVariables.set('correlationId', correlationId);
+      console.log(`[Northstar Demo] ${pm.request.method} ${pm.request.url.toString()} correlationId=${correlationId}`);
+    language: text/javascript

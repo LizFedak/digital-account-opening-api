@@ -1,0 +1,29 @@
+$kind: http-request
+name: PATCH /account-applications/:id/status — should return 409 for invalid transition
+url: "{{baseUrl}}/account-applications/{{approvedApplicationId}}/status"
+method: PATCH
+headers:
+  x-api-key: "{{apiKey}}"
+  x-correlation-id: "{{correlationId}}"
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "status": "in-review",
+      "reason": "Attempt to move approved application backward."
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('PATCH /account-applications/:id/status — should return 409 for invalid transition', function () {
+        pm.response.to.have.status(409);
+      });
+      const json = pm.response.json();
+      pm.test('Conflict response should explain invalid state transition', function () {
+        pm.expect(json.error.code).to.eql('INVALID_STATUS_TRANSITION');
+        pm.expect(json.error.message).to.include('approved');
+        pm.expect(json.error.correlationId).to.be.a('string');
+      });
+    language: text/javascript
+order: 4000

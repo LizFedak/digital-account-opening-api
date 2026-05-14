@@ -1,0 +1,3 @@
+$kind: collection
+description: "Ordered lifecycle flow: create, read, move into review, approve, and verify final state."
+order: 1000

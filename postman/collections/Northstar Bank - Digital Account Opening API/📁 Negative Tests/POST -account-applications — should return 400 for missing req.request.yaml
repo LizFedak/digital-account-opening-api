@@ -1,0 +1,28 @@
+$kind: http-request
+name: POST /account-applications — should return 400 for missing required fields
+url: "{{baseUrl}}/account-applications"
+method: POST
+headers:
+  x-api-key: "{{apiKey}}"
+  x-correlation-id: "{{correlationId}}"
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "accountType": "checking"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('POST /account-applications — should return 400 for missing required fields', function () {
+        pm.response.to.have.status(400);
+      });
+      const json = pm.response.json();
+      pm.test('Validation error should use standard error schema', function () {
+        pm.expect(json.error.code).to.eql('VALIDATION_ERROR');
+        pm.expect(json.error.message).to.include('productCode');
+        pm.expect(json.error.correlationId).to.be.a('string');
+      });
+    language: text/javascript
+order: 2000

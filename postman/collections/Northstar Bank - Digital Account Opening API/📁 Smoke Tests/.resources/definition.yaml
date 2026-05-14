@@ -1,0 +1,3 @@
+$kind: collection
+description: Fast checks for health, a basic authenticated read, and authentication failure.
+order: 2000

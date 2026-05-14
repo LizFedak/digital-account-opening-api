@@ -1,0 +1,33 @@
+$kind: http-request
+name: PATCH /account-applications/:id/status — should approve reviewed application
+url: "{{baseUrl}}/account-applications/{{createdApplicationId}}/status"
+method: PATCH
+headers:
+  x-api-key: "{{apiKey}}"
+  x-correlation-id: "{{correlationId}}"
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "status": "approved",
+      "reason": "Risk and identity checks passed."
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('PATCH /account-applications/:id/status — should approve reviewed application', function () {
+        pm.response.to.have.status(200);
+      });
+      const json = pm.response.json();
+      pm.test('Approved application should keep verified identity state', function () {
+        pm.expect(json.data.status).to.eql('approved');
+        pm.expect(json.data.identityVerification.verificationStatus).to.eql('verified');
+        pm.expect(json.data.applicationId).to.eql(pm.collectionVariables.get('createdApplicationId'));
+      });
+      pm.test('Response should include correlation metadata', function () {
+        pm.expect(json).to.have.nested.property('meta.correlationId');
+        pm.expect(json).to.have.nested.property('meta.timestamp');
+      });
+    language: text/javascript
+order: 4000

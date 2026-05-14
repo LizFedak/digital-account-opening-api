@@ -1,0 +1,21 @@
+$kind: http-request
+name: GET /account-applications/:id — should return 404 for unknown ID
+url: "{{baseUrl}}/account-applications/app_demo_unknown"
+method: GET
+headers:
+  x-api-key: "{{apiKey}}"
+  x-correlation-id: "{{correlationId}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('GET /account-applications/:id — should return 404 for unknown ID', function () {
+        pm.response.to.have.status(404);
+      });
+      const json = pm.response.json();
+      pm.test('Not found response should use standard error schema', function () {
+        pm.expect(json.error.code).to.eql('APPLICATION_NOT_FOUND');
+        pm.expect(json.error.message).to.include('app_demo_unknown');
+        pm.expect(json.error.correlationId).to.be.a('string');
+      });
+    language: text/javascript
+order: 3002

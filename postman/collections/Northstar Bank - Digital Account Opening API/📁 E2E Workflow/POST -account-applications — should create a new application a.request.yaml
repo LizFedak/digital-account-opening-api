@@ -1,0 +1,77 @@
+$kind: http-request
+name: POST /account-applications — should create a new application and return 201
+url: "{{baseUrl}}/account-applications"
+method: POST
+headers:
+  x-api-key: "{{apiKey}}"
+  x-correlation-id: "{{correlationId}}"
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "productCode": "NSB_EVERYDAY_CHECKING",
+      "accountType": "checking",
+      "primaryApplicant": {
+        "firstName": "Jordan",
+        "lastName": "Lee",
+        "email": "{{uniqueEmail}}",
+        "phone": "+1-303-555-0142",
+        "dateOfBirth": "1990-04-17",
+        "taxResidency": "US",
+        "address": {
+          "line1": "100 Market Street",
+          "line2": "Suite 220",
+          "city": "Denver",
+          "state": "CO",
+          "postalCode": "80202",
+          "country": "US"
+        }
+      },
+      "identityVerification": {
+        "method": "document-upload",
+        "documentType": "drivers-license",
+        "documentLastFour": "1042"
+      },
+      "funding": {
+        "initialDepositAmount": 250,
+        "fundingMethod": "ach",
+        "externalAccountLastFour": "7788"
+      }
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const suffix = Date.now();
+      pm.collectionVariables.set('uniqueEmail', `e2e.applicant.${suffix}@example.com`);
+      console.log(`[Northstar Demo] Generated E2E applicant email ${pm.collectionVariables.get('uniqueEmail')}`);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('POST /account-applications — should create a new application and return 201', function () {
+        pm.response.to.have.status(201);
+      });
+      const json = pm.response.json();
+      pm.test('Response should include data and meta envelopes', function () {
+        pm.expect(json).to.have.property('data');
+        pm.expect(json).to.have.property('meta');
+        pm.expect(json.meta).to.have.property('correlationId');
+        pm.expect(json.meta).to.have.property('timestamp');
+      });
+      pm.test('Application contract should include all OAS fields', function () {
+        const app = json.data;
+        ['applicationId', 'status', 'productCode', 'accountType', 'primaryApplicant', 'identityVerification', 'funding', 'riskScore', 'submittedAt', 'updatedAt'].forEach((field) => pm.expect(app).to.have.property(field));
+        ['firstName', 'lastName', 'email', 'phone', 'dateOfBirth', 'taxResidency', 'address'].forEach((field) => pm.expect(app.primaryApplicant).to.have.property(field));
+        ['line1', 'city', 'state', 'postalCode', 'country'].forEach((field) => pm.expect(app.primaryApplicant.address).to.have.property(field));
+        ['method', 'documentType', 'documentLastFour', 'verificationStatus'].forEach((field) => pm.expect(app.identityVerification).to.have.property(field));
+        ['initialDepositAmount', 'fundingMethod', 'externalAccountLastFour'].forEach((field) => pm.expect(app.funding).to.have.property(field));
+      });
+      pm.test('Created application should have submitted status and pending verification', function () {
+        pm.expect(json.data.status).to.eql('submitted');
+        pm.expect(json.data.identityVerification.verificationStatus).to.eql('pending');
+        pm.expect(json.data.riskScore).to.be.a('number');
+      });
+      pm.collectionVariables.set('createdApplicationId', json.data.applicationId);
+      pm.collectionVariables.set('applicationId', json.data.applicationId);
+    language: text/javascript
+order: 1000
