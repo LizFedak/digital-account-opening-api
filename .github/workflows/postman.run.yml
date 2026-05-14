@@ -1,6 +1,9 @@
 name: API Quality Checks
 
 on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0,6,12,18 * * *"
   pull_request:
     branches:
       - main
@@ -26,4 +29,4 @@ jobs:
         run: postman spec lint ./openapi.yaml --workspace-id 445f54a3-9b60-4f86-9b0a-a026856a185a --report-events
 
       - name: Run Postman collection
-        run: postman collection run 9474696-532665ab-6df5-4012-9e79-ba4e03e341f2 -e 9474696-f7bc5d0c-675f-46fa-9c0c-f9647da8197b --report-events
+        run: postman collection run 9474696-246814dd-07eb-45d7-b3bb-3e0f275181f8 -e 9474696-f7bc5d0c-675f-46fa-9c0c-f9647da8197b --report-events
